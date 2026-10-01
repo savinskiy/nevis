@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: nevis-search
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/nevis}
+    username: ${DB_USER:nevis}
+    password: ${DB_PASSWORD:nevis}
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URL:http://localhost:9200}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  flyway:
+    enabled: true
+
+server:
+  port: ${PORT:8080}
+
+springdoc:
+  default-produces-media-type: application/json
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+nevis:
+  search:
+    max-results: 20
+  summary:
+    # Background summary jobs run in parallel; bounds concurrent LLM requests from this instance.
+    threads: 2
+    # How often documents still without a summary (e.g. after an LLM outage) are queued again.
+    retry-interval: 5m
+  llm:
+    # Optional. Without an API key documents get no summary; search does not use the LLM.
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${ANTHROPIC_MODEL:claude-opus-5-5}
+    timeout: 30s

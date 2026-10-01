@@ -1,0 +1,342 @@
+openapi: 3.1.0
+info:
+  title: Nevis Search API
+  description: Search across wealth-management clients and their documents. Errors
+    are returned as RFC 9457 problem details (application/problem+json).
+  version: 1.0.0
+servers:
+- url: /
+paths:
+  /clients:
+    get:
+      tags:
+      - Clients
+      summary: List all clients
+      description: "Sorted by last name, then first name."
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientResponse"
+    post:
+      tags:
+      - Clients
+      summary: Create a client
+      description: Emails are normalised to lower case and must be unique (409 otherwise).
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientRequest"
+        required: true
+      responses:
+        "201":
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientResponse"
+        "400":
+          description: Validation failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Email already in use
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /clients/{id}/documents:
+    get:
+      tags:
+      - Clients
+      summary: List the documents of a client
+      operationId: listDocuments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "The client's documents, newest first"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentResponse"
+        "404":
+          description: Client not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    post:
+      tags:
+      - Clients
+      summary: Add a document to a client
+      description: "The document is indexed before this call returns, so it is immediately\
+        \ searchable."
+      operationId: createDocument
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentRequest"
+        required: true
+      responses:
+        "201":
+          description: Document created and indexed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+        "400":
+          description: Validation failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Client not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /search:
+    get:
+      tags:
+      - Search
+      summary: Search clients and documents
+      description: |-
+        Returns clients and documents in one list ordered by relevance.
+
+        * **Clients** match on name, email and description, case-insensitive and including parts of words (`NevisWealth` or `nevis` finds `john.doe@neviswealth.com`).
+        * **Documents** match on title and content, including related terms (`address proof` finds a document containing `utility bill`).
+      operationId: search
+      parameters:
+      - name: q
+        in: query
+        description: Search text
+        required: true
+        schema:
+          type: string
+          maxLength: 500
+          minLength: 0
+        example: address proof
+      responses:
+        "200":
+          description: "Matching clients and documents, best first; empty when nothing\
+            \ matches"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchResult"
+        "400":
+          description: Missing or blank query
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /documents/{id}:
+    get:
+      tags:
+      - Documents
+      summary: Get a document
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+        "404":
+          description: Document not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /clients/{id}:
+    get:
+      tags:
+      - Clients
+      summary: Get a client
+      operationId: get_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientResponse"
+        "404":
+          description: Client not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+components:
+  schemas:
+    CreateClientRequest:
+      properties:
+        first_name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        last_name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          minLength: 0
+        description:
+          type: string
+          maxLength: 10000
+          minLength: 0
+        social_links:
+          type: array
+          items:
+            type: string
+            maxLength: 2048
+            minLength: 0
+          maxItems: 20
+          minItems: 0
+      required:
+      - email
+      - first_name
+      - last_name
+    ClientResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+        description:
+          type: string
+        social_links:
+          type: array
+          items:
+            type: string
+    CreateDocumentRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          minLength: 0
+        content:
+          type: string
+          maxLength: 200000
+          minLength: 0
+      required:
+      - content
+      - title
+    DocumentResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        summary:
+          type: string
+          description: Summary written by Claude shortly after upload; absent until
+            ready or without an API key
+        created_at:
+          type: string
+          format: date-time
+    SearchResult:
+      properties:
+        type:
+          type: string
+          enum:
+          - client
+          - document
+        score:
+          type: number
+          format: double
+          description: "Elasticsearch relevance score; results are sorted by it, best\
+            \ first"
+        highlights:
+          type: object
+          additionalProperties:
+            type: array
+            description: "Matching fragments per field, matches wrapped in <em>"
+            items:
+              type: string
+              description: "Matching fragments per field, matches wrapped in <em>"
+          description: "Matching fragments per field, matches wrapped in <em>"
+        client:
+          $ref: "#/components/schemas/ClientResponse"
+        document:
+          $ref: "#/components/schemas/DocumentResponse"
+    Problem:
+      type: object
+      description: RFC 9457 problem details
+      properties:
+        title:
+          type: string
+          example: Bad Request
+        status:
+          type: integer
+          format: int32
+          example: 400
+        detail:
+          type: string
+          example: Validation failed
+        instance:
+          type: string
+          example: /clients
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Validation errors by field name; present on 400 responses only
+          example:
+            email: must be a well-formed email address
+      required:
+      - status
+      - title

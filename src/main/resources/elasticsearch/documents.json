@@ -1,0 +1,48 @@
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "english_stop": { "type": "stop", "stopwords": "_english_" },
+        "english_stemmer": { "type": "stemmer", "language": "english" },
+        "related_terms": {
+          "type": "synonym_graph",
+          "synonyms": [
+            "address proof, proof of address, proof of residence, address verification => address proof, proof of address, proof of residence, address verification, utility bill, electricity bill, gas bill, water bill, council tax, bank statement, tenancy agreement, lease agreement, mortgage statement",
+            "proof of identity, identity proof, identity document, id document, identification, photo id => proof of identity, identity proof, identity document, id document, identification, photo id, passport, driving licence, driving license, national id, identity card, id card, residence permit",
+            "proof of income, income proof, income verification => proof of income, income proof, income verification, payslip, pay slip, pay stub, salary slip, p60, employment contract, tax return",
+            "tax, taxes => tax, taxes, tax return, self assessment, hmrc, irs, capital gains, p60",
+            "source of funds, source of wealth, proof of funds => source of funds, source of wealth, proof of funds, bank statement, sale agreement, inheritance, payslip, dividend statement",
+            "kyc, know your customer, due diligence, aml, anti money laundering => kyc, know your customer, due diligence, aml, anti money laundering, passport, utility bill, source of funds, source of wealth, sanctions screening",
+            "retirement, retirement planning, pension => retirement, retirement planning, pension, pension statement, sipp, annuity, 401k, ira",
+            "investment, investments, portfolio, holdings => investment, investments, portfolio, holdings, portfolio statement, asset allocation, equities, bonds, etf, mutual fund",
+            "risk profile, risk tolerance, attitude to risk, suitability => risk profile, risk tolerance, attitude to risk, suitability, risk questionnaire, suitability report",
+            "estate planning, inheritance planning, succession planning => estate planning, inheritance planning, succession planning, will, testament, trust deed, power of attorney, inheritance tax",
+            "insurance, insurance policy => insurance, insurance policy, life insurance, life cover, policy schedule, critical illness, income protection",
+            "mortgage, home loan => mortgage, home loan, mortgage statement, mortgage offer, loan agreement"
+          ]
+        }
+      },
+      "analyzer": {
+        "content": {
+          "type": "custom", "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding", "english_stop", "english_stemmer"]
+        },
+        "content_search": {
+          "type": "custom", "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding", "related_terms", "english_stop", "english_stemmer"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": { "type": "keyword" },
+      "client_id": { "type": "keyword" },
+      "title": { "type": "text", "analyzer": "content", "search_analyzer": "content_search" },
+      "content": { "type": "text", "analyzer": "content", "search_analyzer": "content_search" },
+      "summary": { "type": "text", "index": false },
+      "created_at": { "type": "date" }
+    }
+  }
+}

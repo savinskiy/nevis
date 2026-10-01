@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "index": { "max_ngram_diff": 17 },
+    "analysis": {
+      "tokenizer": {
+        "email_parts": { "type": "pattern", "pattern": "[^\\p{L}\\p{N}]+" },
+        "word_slices": { "type": "ngram", "min_gram": 3, "max_gram": 20, "token_chars": ["letter", "digit"] }
+      },
+      "analyzer": {
+        "name": { "type": "custom", "tokenizer": "standard", "filter": ["lowercase", "asciifolding"] },
+        "email": { "type": "custom", "tokenizer": "email_parts", "filter": ["lowercase", "asciifolding"] },
+        "partial": { "type": "custom", "tokenizer": "word_slices", "filter": ["lowercase", "asciifolding"] }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": { "type": "keyword" },
+      "first_name": {
+        "type": "text", "analyzer": "name",
+        "fields": { "partial": { "type": "text", "analyzer": "partial", "search_analyzer": "name" } }
+      },
+      "last_name": {
+        "type": "text", "analyzer": "name",
+        "fields": { "partial": { "type": "text", "analyzer": "partial", "search_analyzer": "name" } }
+      },
+      "email": {
+        "type": "text", "analyzer": "email",
+        "fields": { "partial": { "type": "text", "analyzer": "partial", "search_analyzer": "email" } }
+      },
+      "description": { "type": "text", "analyzer": "english" },
+      "social_links": { "type": "keyword", "index": false }
+    }
+  }
+}
