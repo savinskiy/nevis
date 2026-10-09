@@ -11,7 +11,8 @@ import java.util.Map;
 public record SearchResult(
         @Schema(allowableValues = {"client", "document"}) String type,
         @Schema(description = "Elasticsearch relevance score; results are sorted by it, best first") double score,
-        @Schema(description = "Matching fragments per field, matches wrapped in <em>") Map<String, List<String>> highlights,
+        @Schema(description = "Matching fragments per field (matches wrapped in <em>); for documents that matched by "
+                + "meaning, \"passage\" holds the passage closest to the query") Map<String, List<String>> highlights,
         @Schema(description = "Present when type=client") ClientResponse client,
         @Schema(description = "Present when type=document") DocumentResponse document) {
 }

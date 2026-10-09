@@ -35,6 +35,9 @@ management:
 nevis:
   search:
     max-results: 20
+    # Minimum cosine similarity between a query and a document passage for a match by meaning
+    # (all-MiniLM-L6-v2): related passages measured 0.34-0.54, unrelated ones at most 0.26.
+    min-similarity: 0.30
   summary:
     # Background summary jobs run in parallel; bounds concurrent LLM requests from this instance.
     threads: 2

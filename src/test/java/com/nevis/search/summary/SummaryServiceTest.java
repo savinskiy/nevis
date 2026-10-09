@@ -14,7 +14,6 @@ import com.nevis.search.client.ClientId;
 import com.nevis.search.document.Document;
 import com.nevis.search.document.DocumentId;
 import com.nevis.search.document.DocumentRepository;
-import com.nevis.search.document.DocumentResponse;
 import com.nevis.search.llm.LlmClient;
 import com.nevis.search.search.SearchService;
 import java.util.Optional;
@@ -43,7 +42,7 @@ class SummaryServiceTest {
         assertThat(service.summarize(id)).contains("A will.");
 
         verify(documents).saveSummary(id.value(), "A will.");
-        verify(search).index(any(DocumentResponse.class));
+        verify(search).updateSummary(id.value(), "A will.");
     }
 
     @Test
@@ -68,7 +67,7 @@ class SummaryServiceTest {
         when(documents.saveSummary(any(), anyString())).thenReturn(0);
 
         assertThat(service.summarize(id)).isEmpty();
-        verify(search, never()).index(any(DocumentResponse.class));
+        verify(search, never()).updateSummary(any(), anyString());
     }
 
     @Test

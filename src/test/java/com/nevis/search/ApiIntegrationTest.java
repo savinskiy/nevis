@@ -233,6 +233,53 @@ class ApiIntegrationTest extends IntegrationTest {
             search("zzzyqx").andExpect(jsonPath("$", hasSize(0)));
             search("johndoe").andExpect(jsonPath("$", hasSize(0))); // words are matched, not glued-together text
         }
+
+        @Test
+        void findsDocumentByMeaningWithoutSharedWords() throws Exception {
+            String clientId = createClient("Maria", "Garcia", "mg@example.com", "");
+            String questionnaire = createDocument(clientId, "Questionnaire",
+                    "Maria accepts high volatility and could tolerate a loss of up to 25 percent in a single year.");
+            createDocument(clientId, "Invoice", "Invoice for repairing the garden fence and painting the shed.");
+
+            // no word of the query occurs in the document
+            search("how much risk can she handle")
+                    .andExpect(jsonPath("$", hasSize(1)))
+                    .andExpect(jsonPath("$[0].document.id").value(questionnaire))
+                    .andExpect(jsonPath("$[0].highlights.passage[0]", containsString("tolerate a loss")))
+                    .andExpect(jsonPath("$[0].highlights.content").doesNotExist());
+        }
+
+        @Test
+        void retiringEarlyFindsPlansToStopWorking() throws Exception {
+            String clientId = createClient("John", "Doe", "jd@example.com", "");
+            String plan = createDocument(clientId, "Meeting notes",
+                    "John wants to stop working at 58 and live off his savings and investments.");
+            createDocument(clientId, "Invoice", "Invoice for repairing the garden fence and painting the shed.");
+
+            search("retiring early").andExpect(jsonPath("$[*].document.id", contains(plan)));
+        }
+
+        @Test
+        void unrelatedQueryDoesNotMatchByMeaning() throws Exception {
+            String clientId = createClient("Maria", "Garcia", "mg@example.com", "");
+            createDocument(clientId, "Questionnaire",
+                    "Maria accepts high volatility and could tolerate a loss of up to 25 percent in a single year.");
+            createDocument(clientId, "Bill", "Electricity and gas bill for March, amount due 84.20 GBP.");
+
+            search("football results").andExpect(jsonPath("$", hasSize(0)));
+            search("kitchen renovation").andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void wordAndMeaningMatchRanksAboveMeaningOnly() throws Exception {
+            String clientId = createClient("John", "Doe", "jd@example.com", "");
+            String pension = createDocument(clientId, "Pension",
+                    "Annual pension statement: the pension pot is worth 410,000 pounds.");
+            createDocument(clientId, "Plans",
+                    "John wants to stop working at 58 and live off his savings and investments.");
+
+            search("pension").andExpect(jsonPath("$[0].document.id").value(pension));
+        }
     }
 
     @Nested

@@ -31,12 +31,14 @@ public class SearchIndexInitializer implements ApplicationRunner {
     private final ElasticsearchClient elasticsearch;
     private final ClientRepository clients;
     private final DocumentRepository documents;
+    private final SearchService search;
 
     public SearchIndexInitializer(ElasticsearchClient elasticsearch, ClientRepository clients,
-                                  DocumentRepository documents) {
+                                  DocumentRepository documents, SearchService search) {
         this.elasticsearch = elasticsearch;
         this.clients = clients;
         this.documents = documents;
+        this.search = search;
     }
 
     @Override
@@ -50,7 +52,8 @@ public class SearchIndexInitializer implements ApplicationRunner {
         if (createOrUpgrade(SearchService.DOCUMENTS)) {
             BulkRequest.Builder bulk = new BulkRequest.Builder();
             documents.findAll().stream().map(DocumentResponse::from).forEach(document -> bulk.operations(op -> op
-                    .index(i -> i.index(SearchService.DOCUMENTS).id(document.id().toString()).document(document))));
+                    .index(i -> i.index(SearchService.DOCUMENTS).id(document.id().toString())
+                            .document(search.toIndexed(document)))));
             reindex(SearchService.DOCUMENTS, bulk, documents.count());
         }
     }

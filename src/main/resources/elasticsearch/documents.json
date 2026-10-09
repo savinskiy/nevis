@@ -42,7 +42,14 @@
       "title": { "type": "text", "analyzer": "content", "search_analyzer": "content_search" },
       "content": { "type": "text", "analyzer": "content", "search_analyzer": "content_search" },
       "summary": { "type": "text", "index": false },
-      "created_at": { "type": "date" }
+      "created_at": { "type": "date" },
+      "passages": {
+        "type": "nested",
+        "properties": {
+          "text": { "type": "text", "index": false },
+          "vector": { "type": "dense_vector", "dims": 384, "index": true, "similarity": "cosine" }
+        }
+      }
     }
   }
 }

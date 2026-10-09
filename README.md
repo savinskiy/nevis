@@ -4,13 +4,14 @@ A search service for wealth advisors: store clients and their documents, then se
 
 - **Clients** are found by name, email or description, ignoring case and matching parts of words: `NevisWealth`
   (or just `nevis`) returns the client with email `john.doe@neviswealth.com`.
-- **Documents** are found by their words and by related terms: `address proof` returns a document that
-  contains `utility bill`.
+- **Documents** are found by meaning as well as by words: `address proof` returns a document that contains
+  `utility bill`, and `retiring early` finds meeting notes saying the client "intends to stop working at 60".
 - **Summaries** (the optional feature): Claude summarises each document in the background after upload; the
   summary is returned with the document.
 
-Stack: Java 21, Spring Boot 4, PostgreSQL 17 (source of truth), Elasticsearch 9 (search), and optionally Claude
-for summaries. Search does not use an LLM.
+Stack: Java 21, Spring Boot 4, PostgreSQL 17 (source of truth), Elasticsearch 9 (search, including vector search),
+an embedding model that runs inside the app (all-MiniLM-L6-v2, no API key needed), and optionally Claude for
+summaries.
 
 ## Setup
 
@@ -172,6 +173,37 @@ The seeded bill never says "address proof"; it matches through the related terms
 ]
 ```
 
+### Find a document by meaning
+
+```bash
+curl 'localhost:8080/search?q=retiring%20early'
+```
+
+The meeting notes never say "retiring early". `highlights.passage` is the passage that matched by meaning;
+`highlights.content` shows the words that matched too (`retirement`, via stemming). Shortened:
+
+```json
+[
+  {
+    "type": "document",
+    "score": 2.2981339,
+    "highlights": {
+      "content": [
+        "<em>Retirement</em> plan. John wants to live off his pension savings and a modest drawdown from the ISA."
+      ],
+      "passage": [
+        "Asset allocation. Because John intends to stop working at 60, in three years, we agreed to reduce the equity allocation from 70 to 60 percent and move the difference into short-dated bonds and a cash buffer. ..."
+      ]
+    },
+    "document": {
+      "id": "d1ceb114-690d-4528-ac35-ea8cfd720605",
+      "title": "Annual review 2024",
+      "...": "..."
+    }
+  }
+]
+```
+
 ### Errors
 
 ```bash
@@ -215,13 +247,25 @@ in the index metadata for this, so changes to analyzers or synonyms deploy witho
   satisfy it: `address proof` also searches for `utility bill`, `bank statement`, `council tax`…; likewise for
   identity, income, tax, KYC, retirement, investments, risk profile, estate planning, insurance and mortgages.
   Expansion is one-way: searching `utility bill` does not return other proofs of address.
+- **Documents by meaning (embeddings):** each document is split into passages (its title, then each paragraph,
+  long ones cut at sentence ends), and every passage is turned into a 384-number vector by the all-MiniLM-L6-v2
+  model, which runs inside the application. The vectors are stored in Elasticsearch as a nested `dense_vector`
+  field. A query is embedded the same way, and Elasticsearch's kNN search finds the passages closest to it, so a
+  document is found even when it shares no words with the query: `how much risk can she handle` finds a
+  questionnaire saying the client "could tolerate a loss of up to 25 percent". A passage must reach a cosine
+  similarity of 0.30 (`nevis.search.min-similarity`); on the demo data related passages scored 0.34–0.54 and
+  unrelated ones at most 0.26, so `football results` finds nothing. The best passage is returned under
+  `highlights.passage`.
 
-Results are ordered by Elasticsearch's BM25 score, at most 20 (`nevis.search.max-results`). The synonym list is
-plain configuration: a domain expert can extend it without touching code.
+Both run as one Elasticsearch query: a document matches by words (BM25, with synonyms and partial names) **or** by
+meaning, and matching both ranks it higher. The synonyms still matter next to the embeddings: they encode
+domain facts a general-purpose model doesn't reliably know, while the embeddings cover wording nobody wrote a
+rule for. Results are ordered by score, at most 20 (`nevis.search.max-results`). The synonym list is plain
+configuration: a domain expert can extend it without touching code.
 
 **Summaries** are generated after the document is committed, on a small background pool, so uploads stay fast.
-The summary is stored in PostgreSQL and re-indexed, and from then on appears on the document and in search
-results. Without an API key, or while Claude is unavailable (e.g. overloaded), documents simply have no summary;
+The summary is stored in PostgreSQL and added to the search index (without recomputing embeddings), and from then
+on appears on the document and in search results. Without an API key, or while Claude is unavailable (e.g. overloaded), documents simply have no summary;
 those still missing one are queued again at startup and every 5 minutes (`nevis.summary.retry-interval`).
 
 ## Configuration

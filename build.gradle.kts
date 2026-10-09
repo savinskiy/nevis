@@ -26,6 +26,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
+    // sentence embeddings computed in-process (all-MiniLM-L6-v2, ONNX): no external service or API key
+    implementation("dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2-q:1.22.0-beta32")
     implementation("com.anthropic:anthropic-java:2.66.0")
 
     runtimeOnly("org.postgresql:postgresql")

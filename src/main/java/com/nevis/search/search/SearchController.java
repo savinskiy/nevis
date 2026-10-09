@@ -30,8 +30,9 @@ public class SearchController {
 
                     * **Clients** match on name, email and description, case-insensitive and including parts \
                     of words (`NevisWealth` or `nevis` finds `john.doe@neviswealth.com`).
-                    * **Documents** match on title and content, including related terms \
-                    (`address proof` finds a document containing `utility bill`).""")
+                    * **Documents** match on title and content by words, including related terms \
+                    (`address proof` finds a document containing `utility bill`), and by meaning through \
+                    embeddings (`retiring early` finds notes about stopping work at 60).""")
     public List<SearchResult> search(
             @Parameter(description = "Search text", example = "address proof")
             @RequestParam @NotBlank @Size(max = 500) String q) {

@@ -3,7 +3,6 @@ package com.nevis.search.summary;
 import com.nevis.search.document.Document;
 import com.nevis.search.document.DocumentId;
 import com.nevis.search.document.DocumentRepository;
-import com.nevis.search.document.DocumentResponse;
 import com.nevis.search.llm.LlmClient;
 import com.nevis.search.search.SearchService;
 import java.util.Optional;
@@ -47,8 +46,7 @@ public class SummaryService {
         if (summary.isEmpty() || documents.saveSummary(documentId.value(), summary.get()) == 0) {
             return Optional.empty();
         }
-        document.setSummary(summary.get());
-        search.index(DocumentResponse.from(document));
+        search.updateSummary(documentId.value(), summary.get());
         return summary;
     }
 }

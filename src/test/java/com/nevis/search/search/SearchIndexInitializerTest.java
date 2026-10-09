@@ -23,6 +23,7 @@ class SearchIndexInitializerTest extends IntegrationTest {
     void lostIndexIsRebuiltFromPostgres() throws Exception {
         String john = createClient("John", "Doe", "john.doe@neviswealth.com", "");
         createDocument(john, "Scan", "Utility bill from EDF Energy for March 2024.");
+        createDocument(john, "Plans", "John wants to stop working at 58 and live off his savings and investments.");
         elasticsearch.indices().delete(d -> d.index("clients", "documents"));
 
         startUp();
@@ -32,6 +33,8 @@ class SearchIndexInitializerTest extends IntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].document.title").value("Scan"))
                 .andExpect(jsonPath("$[*].type", not(hasItem("client"))));
+        // embeddings are recomputed during the rebuild, so matches by meaning work again
+        search("retiring early").andExpect(jsonPath("$[0].document.title").value("Plans"));
     }
 
     @Test

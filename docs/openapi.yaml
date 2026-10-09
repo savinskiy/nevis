@@ -128,7 +128,7 @@ paths:
         Returns clients and documents in one list ordered by relevance.
 
         * **Clients** match on name, email and description, case-insensitive and including parts of words (`NevisWealth` or `nevis` finds `john.doe@neviswealth.com`).
-        * **Documents** match on title and content, including related terms (`address proof` finds a document containing `utility bill`).
+        * **Documents** match on title and content by words, including related terms (`address proof` finds a document containing `utility bill`), and by meaning through embeddings (`retiring early` finds notes about stopping work at 60).
       operationId: search
       parameters:
       - name: q
@@ -304,11 +304,17 @@ components:
           type: object
           additionalProperties:
             type: array
-            description: "Matching fragments per field, matches wrapped in <em>"
+            description: "Matching fragments per field (matches wrapped in <em>);\
+              \ for documents that matched by meaning, \"passage\" holds the passage\
+              \ closest to the query"
             items:
               type: string
-              description: "Matching fragments per field, matches wrapped in <em>"
-          description: "Matching fragments per field, matches wrapped in <em>"
+              description: "Matching fragments per field (matches wrapped in <em>);\
+                \ for documents that matched by meaning, \"passage\" holds the passage\
+                \ closest to the query"
+          description: "Matching fragments per field (matches wrapped in <em>); for\
+            \ documents that matched by meaning, \"passage\" holds the passage closest\
+            \ to the query"
         client:
           $ref: "#/components/schemas/ClientResponse"
         document:
