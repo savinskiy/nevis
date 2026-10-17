@@ -307,3 +307,7 @@ gcloud compute instances reset nevis-search --zone europe-west1-b
 # remove everything
 gcloud projects delete nevis-search-5923
 ```
+
+## License
+
+Copyright 2026 Aleksei Savin. Licensed under the [Apache License, Version 2.0](LICENSE).
